@@ -5,6 +5,7 @@ let lastNotificationTime = 0;
 const NOTIFICATION_COOLDOWN_MS = 5 * 60 * 1000; // 5 minutes
 let posePalTabId = null; // Initial state
 let lastKnownPostureIsBad = false;
+let blurTimer = null; // Timer for blur activation delay
 
 // Log initial posePalTabId state
 console.log(`[INIT] posePalTabId at script start: ${posePalTabId}`);
@@ -18,7 +19,8 @@ const appDefaultSettings = {
     shoulderHeightDifferenceThreshold: 0.04,
     notificationInterval: 20,
     enableAutoPip: true, 
-    enableBlurEffect: false
+    enableBlurEffect: false,
+    blurDelay: 1000 // Default blur activation delay in ms
 };
 
 chrome.runtime.onStartup.addListener(() => {
@@ -29,7 +31,7 @@ chrome.runtime.onStartup.addListener(() => {
 chrome.runtime.onInstalled.addListener((details) => {
     console.log(`[DEBUG] Extension installed/updated. Reason: ${details.reason}`);
     openTrackerPage();
-    if (details.reason === 'install' || details.reason === 'update') {
+    if (details.reason === 'install' || 'update') {
         chrome.storage.sync.get(appDefaultSettings, (currentSettings) => {
             if (chrome.runtime.lastError) {
                 console.error("[ERROR] onInstalled: Error getting settings:", chrome.runtime.lastError.message);
@@ -141,6 +143,13 @@ chrome.tabs.onActivated.addListener(async (activeInfo) => {
         return; // Critical error, cannot proceed without settings
     }
 
+    // Clear any pending blur timer when tab focus changes
+    if (blurTimer) {
+        clearTimeout(blurTimer);
+        blurTimer = null;
+        console.log("[DEBUG] onActivated: Cleared pending blur timer due to tab switch.");
+    }
+
     // PiP logic is now handled by script.js using visibilitychange
     // So, remove REQUEST_PIP and EXIT_PIP message sending from here.
 
@@ -158,19 +167,28 @@ chrome.tabs.onActivated.addListener(async (activeInfo) => {
         console.log(`[INFO] Switched AWAY from PosePal tab (PosePal ID: ${currentPosePalTabId || 'unknown'}) to tab ${activeInfo.tabId}.`);
         // Blur/Unblur logic for the NEWLY active tab
         if (lastKnownPostureIsBad && settings.enableBlurEffect) {
-            console.log(`[DEBUG] Blur effect enabled and posture is bad. Blurring new tab: ${activeInfo.tabId}`);
-            try {
-                // Check if the target tab is not an extension page or a system page where content scripts might not run
-                const tabInfo = await chrome.tabs.get(activeInfo.tabId);
-                if (tabInfo.url && (tabInfo.url.startsWith('http:') || tabInfo.url.startsWith('https:'))) {
-                    await chrome.tabs.sendMessage(activeInfo.tabId, { action: "BLUR_PAGE" });
-                    console.log(`[DEBUG] BLUR_PAGE message sent to tab ${activeInfo.tabId}`);
-                } else {
-                    console.log(`[DEBUG] Skipping BLUR_PAGE for non-http(s) tab: ${tabInfo.url}`);
+            console.log(`[DEBUG] Switched away from PosePal. Posture is bad & blur enabled. Starting blur timer for new tab: ${activeInfo.tabId}`);
+            if (blurTimer) clearTimeout(blurTimer); // Clear existing timer
+            blurTimer = setTimeout(async () => {
+                try {
+                    // Check if the target tab is not an extension page or a system page where content scripts might not run
+                    const tabInfo = await chrome.tabs.get(activeInfo.tabId);
+                    if (tabInfo.url && (tabInfo.url.startsWith('http:') || tabInfo.url.startsWith('https:'))) {
+                        // Check again if posture is still bad *before* blurring
+                        if (lastKnownPostureIsBad) { 
+                            await chrome.tabs.sendMessage(activeInfo.tabId, { action: "BLUR_PAGE" });
+                            console.log(`[DEBUG] BLUR_PAGE message sent to tab ${activeInfo.tabId} after delay.`);
+                        } else {
+                            console.log("[DEBUG] Blur timer fired, but posture corrected. Skipping blur.");
+                        }
+                    } else {
+                        console.log(`[DEBUG] Skipping BLUR_PAGE for non-http(s) tab after delay: ${tabInfo.url}`);
+                    }
+                } catch (e) {
+                    console.warn(`[WARN] Failed to send BLUR_PAGE to new tab ${activeInfo.tabId} after delay:`, e.message);
                 }
-            } catch (e) { 
-                console.warn(`[WARN] Failed to send BLUR_PAGE to new tab ${activeInfo.tabId}:`, e.message); 
-            }
+                blurTimer = null; // Reset timer
+            }, settings.blurDelay || 0); // Use blurDelay from settings
         } else if (settings.enableBlurEffect) { // Posture is good or unknown, ensure unblur
             console.log(`[DEBUG] Posture is good or unknown. Ensuring new tab ${activeInfo.tabId} is not blurred.`);
             try {
@@ -194,6 +212,11 @@ chrome.tabs.onRemoved.addListener((tabId, removeInfo) => {
         console.log(`[INFO] PosePal tab with ID: ${posePalTabId} was closed.`);
         posePalTabId = null;
         lastKnownPostureIsBad = false; 
+        if (blurTimer) { // <<< ADD THIS BLOCK
+            clearTimeout(blurTimer);
+            blurTimer = null;
+            console.log("[DEBUG] onRemoved: Cleared pending blur timer as PosePal tab closed.");
+        }
         updateBadge("Closed"); 
     }
 });
@@ -218,8 +241,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             if (message.status === "Bad Posture") {
                 if (settings.enableNotifications && message.messages && message.messages.length > 0) {
                     const now = Date.now();
-                    const intervalMilliseconds = settings.notificationInterval * 1000;
-                    if (now - lastNotificationTime > intervalMilliseconds) {
+                    if (now - lastNotificationTime > NOTIFICATION_COOLDOWN_MS) { // <<< ENSURE THIS USES NOTIFICATION_COOLDOWN_MS
                         chrome.notifications.create(
                             `posepal-alert-${Date.now()}`,
                             { 
@@ -239,24 +261,39 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                             }
                         );
                     } else {
-                        console.log("[DEBUG] Notification skipped due to interval.");
+                        console.log("[DEBUG] Notification skipped due to cooldown."); // Updated log
                     }
                 }
-                if (settings.enableBlurEffect) {
-                    chrome.tabs.query({ active: true, currentWindow: true }, (activeTabs) => {
-                        if (chrome.runtime.lastError) {
-                            console.error("[ERROR] onMessage/POSTURE_STATUS: Error querying active tabs for blur:", chrome.runtime.lastError.message);
-                            return;
-                        }
-                        if (activeTabs.length > 0 && activeTabs[0].id !== posePalTabId) {
-                            console.log(`[DEBUG] Bad posture & blur enabled. Sending BLUR_PAGE to active tab: ${activeTabs[0].id}`);
-                            chrome.tabs.sendMessage(activeTabs[0].id, { action: "BLUR_PAGE" })
-                                .catch(e => console.warn(`[WARN] Failed to send BLUR_PAGE to active tab ${activeTabs[0].id} (from POSTURE_STATUS):`, e.message));
-                        }
-                    });
+
+                if (settings.enableBlurEffect) { // <<< MODIFY THIS BLOCK
+                    if (blurTimer) clearTimeout(blurTimer); // Clear any existing timer
+                    blurTimer = setTimeout(() => {
+                        chrome.tabs.query({ active: true, currentWindow: true }, (activeTabs) => {
+                            if (chrome.runtime.lastError) {
+                                console.error("[ERROR] onMessage/POSTURE_STATUS: Error querying active tabs for blur (timer):", chrome.runtime.lastError.message);
+                                blurTimer = null;
+                                return;
+                            }
+                            // Check if posture is still bad when timer fires
+                            if (activeTabs.length > 0 && activeTabs[0].id !== posePalTabId && lastKnownPostureIsBad) {
+                                console.log(`[DEBUG] Bad posture & blur enabled. Sending BLUR_PAGE to active tab: ${activeTabs[0].id} after delay.`);
+                                chrome.tabs.sendMessage(activeTabs[0].id, { action: "BLUR_PAGE" })
+                                    .catch(e => console.warn(`[WARN] Failed to send BLUR_PAGE to active tab ${activeTabs[0].id} (from POSTURE_STATUS timer):`, e.message));
+                            } else {
+                                console.log("[DEBUG] Blur timer fired, but conditions not met (tab changed, posture corrected, or PosePal tab active). Skipping blur.");
+                            }
+                            blurTimer = null; // Reset timer
+                        });
+                    }, settings.blurDelay || 0); // Use blurDelay from settings
+                    console.log(`[DEBUG] Bad posture: Blur timer set for ${settings.blurDelay || 0}ms`);
                 }
             } else { // Good Posture
-                if (settings.enableBlurEffect) { 
+                if (blurTimer) { // <<< ADD THIS BLOCK: If posture becomes good, cancel any pending blur
+                    clearTimeout(blurTimer);
+                    blurTimer = null;
+                    console.log("[DEBUG] Good posture: Cleared pending blur timer.");
+                }
+                if (settings.enableBlurEffect) {
                     chrome.tabs.query({ active: true, currentWindow: true }, (activeTabs) => {
                          if (chrome.runtime.lastError) {
                             console.error("[ERROR] onMessage/POSTURE_STATUS: Error querying active tabs for unblur:", chrome.runtime.lastError.message);
