@@ -83,7 +83,7 @@ function onResults(results) {
     Math.abs(dxLeft) > horizontalTiltThreshold ||
     Math.abs(dxRight) > horizontalTiltThreshold;
 
-  const minVerticalNeckHeight = 0.05;
+  const minVerticalNeckHeight = 0.025; // Adjusted from 0.05
   const isHeadDropped =
     dyLeft < minVerticalNeckHeight ||
     dyRight < minVerticalNeckHeight;
