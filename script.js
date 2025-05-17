@@ -101,18 +101,33 @@ function onResults(results) {
 
   const isForwardNeckCrunch = isLeftNeckCrunched || isRightNeckCrunched;
 
-  const slouching = isHorizontallyTilted || isHeadDropped || isForwardNeckCrunch;
+  let feedbackMessages = [];
 
-  if (slouching) {
-    statusDisplay.textContent = " Bad Posture";
+  if (isHorizontallyTilted) {
+    feedbackMessages.push("Level your head.");
+  }
+  if (isHeadDropped) {
+    feedbackMessages.push("Lift your chin / Sit up straighter.");
+  }
+  if (isForwardNeckCrunch && !isHeadDropped) { // Avoid redundant message if head is already fully dropped
+    feedbackMessages.push("Bring your head back (ears over shoulders).");
+  }
+
+  // Check for uneven shoulders
+  const shoulderHeightDifferenceThreshold = 0.04; // e.g., 4% of image height
+  const shoulderHeightDifference = Math.abs(leftShoulder.y - rightShoulder.y);
+  if (shoulderHeightDifference > shoulderHeightDifferenceThreshold) {
+    feedbackMessages.push("Level your shoulders.");
+  }
+
+  if (feedbackMessages.length > 0) {
+    statusDisplay.textContent = feedbackMessages.join(" ");
     statusDisplay.className = 'bad-posture';
     if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
-      // Message sending to background script for notifications is kept for now,
-      // but background script will no longer create notifications.
-      chrome.runtime.sendMessage({ type: "POSTURE_STATUS", status: "Bad Posture" });
+      chrome.runtime.sendMessage({ type: "POSTURE_STATUS", status: "Bad Posture", messages: feedbackMessages });
     }
   } else {
-    statusDisplay.textContent = " Good Posture";
+    statusDisplay.textContent = "Good Posture";
     statusDisplay.className = 'good-posture';
     if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
       chrome.runtime.sendMessage({ type: "POSTURE_STATUS", status: "Good Posture" });
