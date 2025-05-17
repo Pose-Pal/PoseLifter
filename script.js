@@ -83,48 +83,71 @@ function onResults(results) {
     Math.abs(dxLeft) > horizontalTiltThreshold ||
     Math.abs(dxRight) > horizontalTiltThreshold;
 
-  // --- Improved: Use body-relative measurements for head/neck posture detection ---
-  // Calculate torso height and shoulder width for normalization
-  const leftHip = lm[23];
-  const rightHip = lm[24];
-  let torsoHeight = null;
-  let shoulderWidth = null;
-  let relativeCalculationsPossible = false;
-
-  if (leftHip && rightHip && leftHip.visibility > 0.5 && rightHip.visibility > 0.5) {
-    // Use average shoulder-to-hip distance as torso height
-    const leftTorso = Math.abs(leftShoulder.y - leftHip.y);
-    const rightTorso = Math.abs(rightShoulder.y - rightHip.y);
-    torsoHeight = (leftTorso + rightTorso) / 2;
-    shoulderWidth = Math.abs(leftShoulder.x - rightShoulder.x);
-    // Only use if torso and shoulder width are reasonable
-    if (torsoHeight > 0.1 && shoulderWidth > 0.05) {
-      relativeCalculationsPossible = true;
-    }
-  }
-
-  // Default to false for all
+  // --- Posture Logic Variables ---
   let isHeadDropped = false;
   let isForwardNeckCrunch = false;
 
-  if (relativeCalculationsPossible) {
-    // --- RELATIVE THRESHOLDS ---
-    const relativeMinVerticalNeckHeightRatio = 0.08; // neck height should be at least 8% of torso height
-    const relativeNeckCrunchVerticalMaxRatio = 0.15; // upper bound for 'crunched' neck height (15% of torso)
-    const relativeNeckCrunchHorizontalThresholdRatio = 0.15; // horizontal ear displacement >15% of shoulder width
+  const leftHip = lm[23];
+  const rightHip = lm[24];
 
-    // Use the larger of left/right for neck height
+  let shoulderWidth = null;
+  // Calculate shoulderWidth if shoulders are clearly visible and reasonably spaced
+  if (leftShoulder.visibility > 0.5 && rightShoulder.visibility > 0.5) {
+    const tempShoulderWidth = Math.abs(leftShoulder.x - rightShoulder.x);
+    if (tempShoulderWidth > 0.05) { // Basic sanity check for shoulder width
+        shoulderWidth = tempShoulderWidth;
+    }
+  }
+
+  let hipRelativeCalculationsPossible = false;
+  // Try hip-relative calculations first
+  if (shoulderWidth && // shoulders must be valid for any relative calc
+      leftHip && rightHip && leftHip.visibility > 0.5 && rightHip.visibility > 0.5) {
+    
+    const leftTorso = Math.abs(leftShoulder.y - leftHip.y);
+    const rightTorso = Math.abs(rightShoulder.y - rightHip.y);
+    const torsoHeight = (leftTorso + rightTorso) / 2;
+
+    if (torsoHeight > 0.1) { // Check for reasonable torsoHeight
+        hipRelativeCalculationsPossible = true;
+        // --- HIP-RELATIVE CALCULATIONS (Priority 1) ---
+        // console.log("Using HIP-RELATIVE calculations");
+        const relativeMinVerticalNeckHeightRatio = 0.08; // neck height should be at least 8% of torso height
+        const relativeNeckCrunchVerticalMaxRatio = 0.15; // upper bound for 'crunched' neck height (15% of torso)
+        const relativeNeckCrunchHorizontalThresholdRatio = 0.15; // horizontal ear displacement >15% of shoulder width
+
+        const neckHeight = Math.max(dyLeft, dyRight);
+        const neckCrunchHorizontal = Math.max(Math.abs(dxLeft), Math.abs(dxRight));
+
+        isHeadDropped = neckHeight < (relativeMinVerticalNeckHeightRatio * torsoHeight);
+        isForwardNeckCrunch =
+          (neckHeight >= (relativeMinVerticalNeckHeightRatio * torsoHeight) &&
+           neckHeight < (relativeNeckCrunchVerticalMaxRatio * torsoHeight) &&
+           neckCrunchHorizontal > (relativeNeckCrunchHorizontalThresholdRatio * shoulderWidth));
+    }
+  }
+
+  // If hip-relative wasn't possible, try shoulder-width-relative
+  if (!hipRelativeCalculationsPossible && shoulderWidth) { // shoulderWidth must be valid
+    // --- SHOULDER-WIDTH-RELATIVE CALCULATIONS (Priority 2) ---
+    // console.log("Using SHOULDER-WIDTH-RELATIVE calculations");
+    const sw_relativeMinVerticalNeckHeightRatio = 0.20; // Tune: neck height < 20% of shoulderWidth = dropped
+    const sw_relativeNeckCrunchVerticalMaxRatio = 0.35; // Tune: neck height < 35% of shoulderWidth (but > min) for crunch
+    const sw_relativeNeckCrunchHorizontalThresholdRatio = 0.15; // Reuse: horizontal ear displacement > 15% of shoulder width
+
     const neckHeight = Math.max(dyLeft, dyRight);
-    // Use the larger of left/right for horizontal displacement
     const neckCrunchHorizontal = Math.max(Math.abs(dxLeft), Math.abs(dxRight));
 
-    isHeadDropped = neckHeight < (relativeMinVerticalNeckHeightRatio * torsoHeight);
+    isHeadDropped = neckHeight < (sw_relativeMinVerticalNeckHeightRatio * shoulderWidth);
     isForwardNeckCrunch =
-      (neckHeight >= (relativeMinVerticalNeckHeightRatio * torsoHeight) &&
-       neckHeight < (relativeNeckCrunchVerticalMaxRatio * torsoHeight) &&
-       neckCrunchHorizontal > (relativeNeckCrunchHorizontalThresholdRatio * shoulderWidth));
-  } else {
-    // --- FALLBACK: Use absolute thresholds (frame-relative) ---
+      (neckHeight >= (sw_relativeMinVerticalNeckHeightRatio * shoulderWidth) &&
+       neckHeight < (sw_relativeNeckCrunchVerticalMaxRatio * shoulderWidth) &&
+       neckCrunchHorizontal > (sw_relativeNeckCrunchHorizontalThresholdRatio * shoulderWidth));
+  } else if (!hipRelativeCalculationsPossible) { 
+    // Fallback to absolute if neither hip-relative nor shoulder-width-relative was done
+    // This means hipRelativeCalculationsPossible is false, AND shoulderWidth was null or invalid.
+    // --- ABSOLUTE FALLBACK CALCULATIONS (Priority 3) ---
+    // console.log("Using ABSOLUTE FALLBACK calculations");
     const minVerticalNeckHeight = 0.025;
     const neckCrunchVerticalMax = 0.10;
     const neckCrunchHorizontalThreshold = 0.03;
