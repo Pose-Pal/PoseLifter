@@ -4,6 +4,7 @@ let posture = "Neutral";
 let videoElement, canvasElement, canvasCtx, statusDisplay, pose, camera;
 let autoPipEnabled = true; // Local cache of the setting, default true
 let wasAutoPiP = false; // Flag to track if PiP was entered automatically by this script
+let pipInteractionOccurred = false; // NEW: Flag to track if user has interacted with PiP controls
 
 document.addEventListener('DOMContentLoaded', () => {
     videoElement = document.getElementById('video');
@@ -66,6 +67,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         videoElement.addEventListener('leavepictureinpicture', () => {
             pipButton.title = "Toggle Picture-in-Picture";
+            console.log("script.js: Left Picture-in-Picture mode (event listener).");
+            wasAutoPiP = false; // If PiP is exited for any reason, it's no longer the current auto-PiP session.
             // Reset icon, e.g., pipButton.textContent = '📺';
         });
 
@@ -138,41 +141,69 @@ loadPosePalSettings();
 
 document.addEventListener('visibilitychange', () => {
     console.log(`script.js: Visibility changed to: ${document.visibilityState}. Auto PiP enabled: ${autoPipEnabled}. Video Element: ${videoElement ? 'exists' : 'null'}`);
-    if (!videoElement || !videoElement.srcObject) { // Check if video is ready
-        console.warn("script.js: videoElement not ready for visibility change handling (no srcObject).");
+    if (!videoElement) {
+        console.warn("script.js: videoElement is null in visibilitychange handler.");
         return;
     }
+    if (!videoElement.srcObject) {
+        console.warn("script.js: videoElement.srcObject is null in visibilitychange handler.");
+        return;
+    }
+    console.log(`script.js: videoElement.readyState: ${videoElement.readyState}, paused: ${videoElement.paused}, pipInteractionOccurred: ${pipInteractionOccurred}`); // Added pipInteractionOccurred
 
     if (document.visibilityState === 'hidden') {
-        console.log(`script.js: Tab hidden. autoPipEnabled: ${autoPipEnabled}, PiP Active: ${document.pictureInPictureElement === videoElement}`);
-        if (autoPipEnabled && document.pictureInPictureElement !== videoElement) {
-            console.log("script.js: Conditions met for entering PiP (hidden, autoPipEnabled, not already in PiP). Requesting PiP.");
-            videoElement.requestPictureInPicture()
-                .then(() => {
-                    console.log("script.js: Entered PiP due to tab hidden.");
-                    wasAutoPiP = true;
-                })
-                .catch(error => console.error("script.js: Error entering PiP on tab hidden:", error));
+        console.log(`script.js: Tab hidden. autoPipEnabled: ${autoPipEnabled}, PiP Active: ${document.pictureInPictureElement === videoElement}, pipInteractionOccurred: ${pipInteractionOccurred}`);
+        if (autoPipEnabled && pipInteractionOccurred && document.pictureInPictureElement !== videoElement) {
+            console.log("script.js: Conditions met for entering PiP (hidden, autoPipEnabled, pipInteractionOccurred, not already in PiP). Requesting PiP.");
+            if (videoElement.paused) {
+                console.log("script.js: Video is paused, attempting to play before PiP.");
+                videoElement.play().then(() => {
+                    console.log("script.js: Video played successfully before PiP.");
+                    videoElement.requestPictureInPicture()
+                        .then(() => {
+                            console.log("script.js: Entered PiP due to tab hidden (after play, interaction occurred).");
+                            wasAutoPiP = true;
+                        })
+                        .catch(error => {
+                            console.error("script.js: Error entering PiP on tab hidden (after play, interaction occurred):", error);
+                            if (error.name === 'NotAllowedError') {
+                                console.warn("script.js: Automatic PiP failed (after play). Browser may require a fresh user interaction. Click PiP button on PosePal tab to re-enable for next switch.");
+                                pipInteractionOccurred = false; // Reset flag, requiring new user gesture
+                            }
+                        });
+                }).catch(err => {
+                    console.error("script.js: Error playing video before PiP:", err);
+                });
+            } else {
+                console.log("script.js: Video is playing, requesting PiP (interaction occurred).");
+                videoElement.requestPictureInPicture()
+                    .then(() => {
+                        console.log("script.js: Entered PiP due to tab hidden (interaction occurred).");
+                        wasAutoPiP = true;
+                    })
+                    .catch(error => {
+                        console.error("script.js: Error entering PiP on tab hidden (interaction occurred):", error);
+                        if (error.name === 'NotAllowedError') {
+                            console.warn("script.js: Automatic PiP failed. Browser may require a fresh user interaction. Click PiP button on PosePal tab to re-enable for next switch.");
+                            pipInteractionOccurred = false; // Reset flag, requiring new user gesture
+                        }
+                    });
+            }
+        } else if (autoPipEnabled && !pipInteractionOccurred) {
+            console.warn("script.js: Auto PiP enabled, but requires a manual PiP toggle first (or again if a previous auto-attempt failed). Please click the PiP button on the PosePal tab.");
         } else {
-            console.log("script.js: Conditions NOT met for entering PiP (hidden).");
-            if (!autoPipEnabled) console.log("    Reason: autoPipEnabled is false.");
-            if (document.pictureInPictureElement === videoElement) console.log("    Reason: Already in PiP with this video element.");
+            console.log("script.js: Conditions NOT met for entering PiP (hidden).", {autoPipEnabled, pipActive: document.pictureInPictureElement === videoElement, pipInteractionOccurred});
         }
     } else if (document.visibilityState === 'visible') {
-        console.log(`script.js: Tab visible. autoPipEnabled: ${autoPipEnabled}, PiP Active: ${document.pictureInPictureElement === videoElement}, wasAutoPiP: ${wasAutoPiP}`);
-        if (autoPipEnabled && document.pictureInPictureElement === videoElement && wasAutoPiP) {
-            console.log("script.js: Conditions met for exiting PiP (visible, autoPipEnabled, was auto PiP). Exiting PiP.");
-            document.exitPictureInPicture()
-                .then(() => {
-                    console.log("script.js: Exited PiP due to tab visible.");
-                    wasAutoPiP = false;
-                })
-                .catch(error => console.error("script.js: Error exiting PiP on tab visible:", error));
+        console.log(`script.js: Tab visible. Auto PiP enabled: ${autoPipEnabled}, PiP Active: ${document.pictureInPictureElement === videoElement}, wasAutoPiP: ${wasAutoPiP}, pipInteractionOccurred: ${pipInteractionOccurred}`);
+        if (document.pictureInPictureElement === videoElement && wasAutoPiP) {
+            // Previously, we would exit PiP here if autoPipEnabled was true.
+            // Now, we keep it open as per user suggestion.
+            console.log("script.js: Tab visible. PiP was automatically opened and will remain open. Manual closure is required if PiP is no longer needed.");
+        } else if (document.pictureInPictureElement === videoElement && !wasAutoPiP) {
+            console.log("script.js: Tab visible. PiP is active (manually opened) and will remain open.");
         } else {
-            console.log("script.js: Conditions NOT met for exiting PiP (visible).");
-            if (!autoPipEnabled) console.log("    Reason: autoPipEnabled is false.");
-            if (document.pictureInPictureElement !== videoElement) console.log("    Reason: Not in PiP with this video element (or PiP element is different).");
-            if (document.pictureInPictureElement === videoElement && !wasAutoPiP) console.log("    Reason: PiP active, but wasAutoPiP is false (likely manually triggered or autoPip disabled during PiP).");
+            console.log("script.js: Tab visible. No PiP active or PiP element is not our video.");
         }
     }
 });
@@ -188,6 +219,7 @@ async function togglePictureInPicture() {
             await document.exitPictureInPicture();
             console.log("Manually exited Picture-in-Picture mode.");
             wasAutoPiP = false; // User action overrides auto state
+            pipInteractionOccurred = true; // User interacted with PiP controls
         } catch (error) {
             console.error("Error manually exiting Picture-in-Picture mode:", error);
         }
@@ -196,6 +228,7 @@ async function togglePictureInPicture() {
             await videoElement.requestPictureInPicture();
             console.log("Manually entered Picture-in-Picture mode.");
             wasAutoPiP = false; // User action means it's not "auto" PiP from visibility change
+            pipInteractionOccurred = true; // User interacted with PiP controls
         } catch (error) {
             console.error("Error manually entering Picture-in-Picture mode:", error);
         }
