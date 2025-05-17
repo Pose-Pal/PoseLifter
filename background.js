@@ -31,7 +31,7 @@ chrome.runtime.onStartup.addListener(() => {
 chrome.runtime.onInstalled.addListener((details) => {
     console.log(`[DEBUG] Extension installed/updated. Reason: ${details.reason}`);
     openTrackerPage();
-    if (details.reason === 'install' || 'update') {
+    if (details.reason === 'install' || details.reason === 'update') {
         chrome.storage.sync.get(appDefaultSettings, (currentSettings) => {
             if (chrome.runtime.lastError) {
                 console.error("[ERROR] onInstalled: Error getting settings:", chrome.runtime.lastError.message);
