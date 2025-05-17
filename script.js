@@ -4,7 +4,7 @@ const canvasCtx = canvasElement.getContext('2d');
 const statusDisplay = document.getElementById('status');
 
 // Initialize MediaPipe Pose
-const pose = new Pose.Pose({
+const pose = new Pose({
   locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`,
 });
 pose.setOptions({
@@ -48,11 +48,13 @@ function onResults(results) {
   const slouching = Math.abs(dxLeft) < 0.03 || Math.abs(dxRight) < 0.03;
 
   if (slouching) {
-    statusDisplay.textContent = "❌ Bad Posture";
-    statusDisplay.style.color = "#ff4d4d";
+    statusDisplay.textContent = " Bad Posture"; // Removed emoji for cleaner look with new styles
+    statusDisplay.className = 'bad-posture'; // Use class for styling
+    // statusDisplay.style.color = "#ff4d4d"; // Style handled by CSS class
   } else {
-    statusDisplay.textContent = "✅ Good Posture";
-    statusDisplay.style.color = "#00ff88";
+    statusDisplay.textContent = " Good Posture"; // Removed emoji
+    statusDisplay.className = 'good-posture'; // Use class for styling
+    // statusDisplay.style.color = "#00ff88"; // Style handled by CSS class
   }
 
   canvasCtx.restore();
