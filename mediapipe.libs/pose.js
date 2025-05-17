@@ -1,9 +1,3 @@
-/**
- * Skipped minification because the original files appears to be already minified.
- * Original file: /npm/@mediapipe/pose@0.5.1675469404/pose.js
- *
- * Do NOT use SRI with dynamically generated files! More information: https://www.jsdelivr.com/using-sri-with-dynamic-files
- */
 (function(){/*
 
  Copyright The Closure Library Authors.

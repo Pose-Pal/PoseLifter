@@ -6,7 +6,10 @@ const statusDisplay = document.getElementById('status');
 
 // Initialize MediaPipe Pose
 const pose = new Pose({
-  locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`,
+  locateFile: (file) => {
+    // Adjusted path to look directly in mediapipe.libs
+    return `mediapipe.libs/${file}`;
+  }
 });
 pose.setOptions({
   modelComplexity: 1,
