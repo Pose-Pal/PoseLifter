@@ -33,7 +33,12 @@
   },
   "web_accessible_resources": [
     {
-      "resources": [ "index.html", "script.js", "style.css" ],
+      "resources": [
+        "index.html",
+        "script.js",
+        "style.css",
+        "mediapipe.libs/*"
+      ],
       "matches": [ "<all_urls>" ]
     }
   ]
