@@ -194,14 +194,16 @@ chrome.tabs.onRemoved.addListener((tabId, removeInfo) => {
     }
 });
 
+// ...existing code...
+
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     let senderTabId = sender.tab ? sender.tab.id : "unknown";
     console.log(`[DEBUG] Message received in background:`, message, `from sender tab ID: ${senderTabId}`);
 
     if (message.type === "POSTURE_STATUS") {
-        lastKnownPostureIsBad = (message.status === "BAD");
+        lastKnownPostureIsBad = (message.status === "BAD"); // Ensure this uses "BAD"
         console.log(`[INFO] Posture status updated: ${message.status}. lastKnownPostureIsBad: ${lastKnownPostureIsBad}`);
-        updateBadge(message.status);
+        updateBadge(message.status); // Ensure this uses the direct status "BAD" or "GOOD"
 
         chrome.storage.sync.get(appDefaultSettings, (settings) => {
             if (chrome.runtime.lastError) {
@@ -210,7 +212,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             }
 
             // Notification Logic
-            if (message.status === "Bad Posture") {
+            if (message.status === "BAD") { // Changed from "Bad Posture" to "BAD"
                 if (settings.enableNotifications && message.messages && message.messages.length > 0) {
                     const now = Date.now();
                     if (now - extensionStartTime > INITIAL_CALIBRATION_COOLDOWN_MS) {
@@ -272,7 +274,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                         return;
                     }
 
-                    if (lastKnownPostureIsBad) {
+                    if (lastKnownPostureIsBad) { // This already uses the "BAD" state correctly
                         console.log(`[DEBUG] Bad posture & blur enabled. Sending BLUR_PAGE to active tab: ${activeTab.id}`);
                         chrome.tabs.sendMessage(activeTab.id, { action: "BLUR_PAGE" })
                             .catch(e => console.warn(`[WARN] Failed to send BLUR_PAGE to active tab ${activeTab.id} (from POSTURE_STATUS):`, e.message));
@@ -298,14 +300,15 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
 });
 
+
 function updateBadge(status) {
     let text = "";
     let color = "#808080"; // Default grey
 
-    if (status === "Bad Posture") {
+    if (status === "BAD") { // Changed from "Bad Posture" to "BAD"
         text = "BAD";
         color = "#FF0000"; // Red
-    } else if (status === "Good Posture") {
+    } else if (status === "GOOD") { // Changed from "Good Posture" to "GOOD"
         text = "GOOD";
         color = "#00FF00"; // Green
     } else if (status === "Closed") {
@@ -319,6 +322,8 @@ function updateBadge(status) {
     chrome.action.setBadgeBackgroundColor({ color: color });
     console.log(`[DEBUG] Badge updated. Text: '${text}', Color: '${color}'`);
 }
+
+// ...existing code...
 
 chrome.action.onClicked.addListener((tab) => {
     console.log("[DEBUG] Browser action clicked. No action configured to open tab.");
