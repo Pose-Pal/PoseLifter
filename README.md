@@ -68,7 +68,7 @@ git clone https://github.com/your-org/poslifter.git
 ## 🤝 Credits
 
 - Developed at JAMHacks
-- Built by [Your Team Name]
+
 - Uses [MediaPipe Pose](https://google.github.io/mediapipe/)
 
 ## 📄 License
