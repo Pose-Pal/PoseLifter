@@ -1,7 +1,7 @@
 
-# 🪑 PosLifter
+# 🪑 PoseLifter
 
-PosLifter is a real-time posture tracking web app that helps you maintain healthy sitting habits using AI-powered pose detection and subtle on-screen feedback.
+PoseLifter is a real-time posture tracking web app that helps you maintain healthy sitting habits using AI-powered pose detection and subtle on-screen feedback.
 
 ## 🚀 Features
 
@@ -58,8 +58,8 @@ posepal-tracking/
 ```
 
 ## 🛠️ Setup
-1. Download the repository: Press <Code> on github and download and extract ZIP file.
-2. Go to chrome://extensions/ and Enable Developer Mode (top right corner).
+1. Download the repository: Press `<Code>` on github and download and extract ZIP file.
+2. Go to `chrome://extensions/` and Enable Developer Mode (top right corner).
 3. Click "Load unpacked" and Select the main branch folder of the repository which you extracted from the ZIP.
 4. On first use, Chrome will prompt for webcam access, so grant permission so PoseLifter can analyze your posture in real-time.
 5. Start Using.
