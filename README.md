@@ -59,27 +59,20 @@ posepal-tracking/
 
 ## 🛠️ Setup
 
-1. Download the repository:
-- Press <Code> on github and download ZIP
-- Extract the ZIP file
-2. Open Chrome and Navigate to Extensions
-- Go to chrome://extensions/
-- Enable Developer Mode (top right corner)
-3. Load the Extension
-- Click "Load unpacked"
-- Select the main branch folder of the repository
-4. Grant Webcam Access
-- On first use, Chrome will prompt for webcam access.
-- Grant permission so PoseLifter can analyze your posture in real-time.
-5. Start Using
-- Open a new tab or page.
-- The extension will activate and begin tracking your posture using picture-in-picture.
-- If poor posture is detected, the screen will blur as a gentle reminder to adjust.
-- Open the extension popup to access Settings — configure slouch detection sensitivity, toggle reminders, or disable features as needed.
+1. Download the repository: Press <Code> on github and download and extract ZIP file.
+2. Go to chrome://extensions/ and Enable Developer Mode (top right corner).
+3. Click "Load unpacked" and Select the main branch folder of the repository which you extracted from the ZIP.
+4. On first use, Chrome will prompt for webcam access, so grant permission so PoseLifter can analyze your posture in real-time.
+5. Start Using.
+
+## 🔧 Tips
+- Press the 🎯 button while in a good position to calibrate a good position
+- Press the 📺 button to enable picture in picture mode while browsing
+- Press the ⚙️ button to navigate to settings and set features like posture sensitivity, detection delay, notifications, picture in picture, and blur.
 
 ## 🤝 Credits
 
-- Developed at JAMHacks 9 by @thinkfir
+- Developed at 🪿JAMHacks 9 by @thinkfir
 - Uses [MediaPipe Pose](https://google.github.io/mediapipe/)
 
 ## 📄 License
