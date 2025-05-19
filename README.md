@@ -70,17 +70,20 @@ git clone https://github.com/Pose-Pal/PosLifter.git
 
 - Enable Developer Mode (top right corner)
 
+
 3. Load the Extension
 
 - Click "Load unpacked"
 
 - Select the root folder of the repository (the one that contains files like manifest.json, content_script.js, settings.js, etc.)
 
+
 4. Grant Webcam Access
 
 - On first use, Chrome will prompt for webcam access.
 
 - Grant permission so PoseLifter can analyze your posture in real-time.
+
 
 5. Start Using
 
