@@ -53,22 +53,23 @@ PosLifter is a real-time posture tracking web app that helps you maintain health
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/your-org/poslifter.git
+git clone https://github.com/Pose-Pal/poslifter.git
 ```
 
-2. Run the posture tracker:
-- Open `/webapp/index.html` in your browser.
-- Allow webcam access.
-
-3. Load the Chrome extension:
+2. Load the Chrome extension:
 - Go to `chrome://extensions`
 - Enable "Developer Mode"
 - Click "Load unpacked" and select the `/extension` folder
+- Open extension and provide permissions
+
+3. Use the Extension
+- Press 🎯 to calibrate good posture.
+- Enable wanted settings, eg. Picture in Picture, Notifications.
+- Start Browsing.
 
 ## 🤝 Credits
 
-- Developed at JAMHacks
-
+- Developed at JAMHacks 9 by @thinkfir
 - Uses [MediaPipe Pose](https://google.github.io/mediapipe/)
 
 ## 📄 License
