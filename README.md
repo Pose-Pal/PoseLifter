@@ -59,31 +59,26 @@ posepal-tracking/
 
 ## 🛠️ Setup
 
-1. Clone the repository:
-```bash
-git clone https://github.com/Pose-Pal/PoseLifter.git
-```
+1. Download the repository:
+- Press <Code> on github and download ZIP
+- Extract the ZIP file
 
 2. Open Chrome and Navigate to Extensions
 
 - Go to chrome://extensions/
-
 - Enable Developer Mode (top right corner)
-
 
 3. Load the Extension
 
 - Click "Load unpacked"
 
-- Select the root folder of the repository (the one that contains files like manifest.json, content_script.js, settings.js, etc.)
-
+- Select the main branch folder of the repository
 
 4. Grant Webcam Access
 
 - On first use, Chrome will prompt for webcam access.
 
 - Grant permission so PoseLifter can analyze your posture in real-time.
-
 
 5. Start Using
 
