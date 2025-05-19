@@ -61,7 +61,7 @@ posepal-tracking/
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/Pose-Pal/PosLifter.git
+git clone https://github.com/Pose-Pal/PoseLifter.git
 ```
 
 2. Open Chrome and Navigate to Extensions
