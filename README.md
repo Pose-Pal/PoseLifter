@@ -42,24 +42,32 @@ PosLifter is a real-time posture tracking web app that helps you maintain health
 ## 📂 Project Structure
 
 ```
-/poslifter/
-├── extension/            # Chrome extension code
-├── webapp/               # Core posture tracker tab (HTML, JS, CSS)
-├── assets/               # Logos, illustrations, etc.
-└── README.md
+posepal-tracking/
+├── icons/ # Extension icons and assets
+├── mediapipe.libs/ # MediaPipe posture tracking library files
+├── background.js # Background script for Chrome extension lifecycle
+├── content_script.js # Script injected into the webpage for posture detection
+├── index.html # Entry page (if needed for testing)
+├── manifest.json # Chrome extension manifest configuration
+├── script.js # Core posture tracking and UI logic
+├── settings.html # Settings page for user preferences
+├── settings.js # JS for the settings interface
+├── settings.html.new # (Placeholder/unused)
+├── settings.js.new # (Placeholder/unused)
+├── style.css # Styles for notification overlays and UI
 ```
 
 ## 🛠️ Setup
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/Pose-Pal/poslifter.git
+git clone https://github.com/Pose-Pal/PosLifter.git
 ```
 
 2. Load the Chrome extension:
 - Go to `chrome://extensions`
 - Enable "Developer Mode"
-- Click "Load unpacked" and select the `/extension` folder
+- Click "Load unpacked" and select the `/posepal-tracking` folder
 - Open extension and provide permissions
 
 3. Use the Extension
