@@ -73,4 +73,4 @@ posepal-tracking/
 - Uses [MediaPipe Pose](https://google.github.io/mediapipe/)
 
 ## 📄 License
-MIT License
+GNU GENERAL PUBLIC LICENSE
