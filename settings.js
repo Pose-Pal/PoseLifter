@@ -6,6 +6,8 @@ const defaultSettings = {
     postureSensitivity: 50, // Default sensitivity (1-100)
     detectionDelay: 1500, // NEW: Default detection delay in ms
     blurDelay: 1000, // <<< ADD THIS LINE
+    modelComplexity: 1, // NEW: Default model complexity (0: Lite, 1: Full, 2: Heavy)
+    pipFps: 25, // NEW: Default PiP FPS (10, 15, 25)
     // Notification interval is now fixed at 5 minutes, managed by background.js
 };
 
@@ -19,6 +21,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const enableNotificationsCheckbox = document.getElementById('enableNotifications');
     const enableAutoPipCheckbox = document.getElementById('enableAutoPip');
     const enableBlurEffectCheckbox = document.getElementById('enableBlurEffect');
+    const modelComplexitySelect = document.getElementById('modelComplexity'); // NEW
+    const pipFpsSelect = document.getElementById('pipFps'); // NEW
     
     const saveButton = document.getElementById('saveSettings');
     const resetButton = document.getElementById('resetToDefaults');
@@ -57,18 +61,22 @@ document.addEventListener('DOMContentLoaded', () => {
             enableNotificationsCheckbox.checked = defaultSettings.enableNotifications;
             enableAutoPipCheckbox.checked = defaultSettings.enableAutoPip;
             enableBlurEffectCheckbox.checked = defaultSettings.enableBlurEffect;
+            modelComplexitySelect.value = defaultSettings.modelComplexity; // NEW
+            pipFpsSelect.value = defaultSettings.pipFps; // NEW
             return;
         }
 
         postureSensitivitySlider.value = settings.postureSensitivity;
         postureSensitivityValueDisplay.textContent = settings.postureSensitivity;
-        detectionDelaySlider.value = settings.detectionDelay; 
-        detectionDelayValueDisplay.textContent = settings.detectionDelay; 
+        detectionDelaySlider.value = settings.detectionDelay;
+        detectionDelayValueDisplay.textContent = settings.detectionDelay;
         blurDelaySlider.value = settings.blurDelay; // <<< ADD THIS LINE
         blurDelayValueDisplay.textContent = settings.blurDelay; // <<< ADD THIS LINE
         enableNotificationsCheckbox.checked = settings.enableNotifications;
         enableAutoPipCheckbox.checked = settings.enableAutoPip;
         enableBlurEffectCheckbox.checked = settings.enableBlurEffect;
+        modelComplexitySelect.value = settings.modelComplexity; // NEW
+        pipFpsSelect.value = settings.pipFps; // NEW
     });
 
     // Save settings
@@ -80,6 +88,8 @@ document.addEventListener('DOMContentLoaded', () => {
             enableNotifications: enableNotificationsCheckbox.checked,
             enableAutoPip: enableAutoPipCheckbox.checked,
             enableBlurEffect: enableBlurEffectCheckbox.checked,
+            modelComplexity: parseInt(modelComplexitySelect.value, 10), // NEW
+            pipFps: parseInt(pipFpsSelect.value, 10), // NEW
         };
         
         chrome.storage.sync.set(newSettings, () => {
@@ -110,6 +120,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     enableNotificationsCheckbox.checked = defaultSettings.enableNotifications;
                     enableAutoPipCheckbox.checked = defaultSettings.enableAutoPip;
                     enableBlurEffectCheckbox.checked = defaultSettings.enableBlurEffect;
+                    modelComplexitySelect.value = defaultSettings.modelComplexity; // NEW
+                    pipFpsSelect.value = defaultSettings.pipFps; // NEW
                     statusMessage.textContent = 'Settings reset to defaults!';
                 }
                 setTimeout(() => statusMessage.textContent = '', 3000);
