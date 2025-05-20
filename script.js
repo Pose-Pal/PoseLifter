@@ -155,8 +155,8 @@ function loadPosePalSettings() {
         maxShoulderTiltDeviation: 13,
         neckHeightRatioDeviation: 0.035, // Adjusted
         enableBlurEffect: false, // Added from previous step, ensure it's here
-        postureSensitivity: 50, // Added from previous step
-        detectionDelay: 1500, // NEW: Default detection delay
+        postureSensitivity: 38, // Added from previous step
+        detectionDelay: 200, // NEW: Default detection delay
     };
 
     chrome.storage.sync.get(defaultValues, (items) => {
