@@ -18,7 +18,6 @@ PoseLifter is a real-time posture tracking web app that helps you maintain healt
 1. **MediaPipe Pose** detects 3D landmarks on your upper body in real time.
 2. **Posture Analysis Logic** compares ear and shoulder positions to determine slouching.
 3. **Browser Feedback** sends alerts via blur, notifications, or sounds.
-4. **Gamification System** tracks streaks and improvements over time.
 
 ## 🔌 Tech Stack
 
