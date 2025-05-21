@@ -66,6 +66,27 @@
         </div>
          <hr class="settings-hr">
 
+        <div class="setting-card">
+            <h2>Performance Settings</h2>
+            <div class="setting">
+                <label for="modelComplexity">MediaPipe Model Complexity</label>
+                <select id="modelComplexity" name="modelComplexity">
+                    <option value="0">Lite (Fastest)</option>
+                    <option value="1" selected>Full (Balanced)</option>
+                    <option value="2">Heavy (Most Accurate)</option>
+                </select>
+            </div>
+            <div class="setting">
+               <label for="pipFps">Picture-in-Picture FPS</label>
+               <select id="pipFps" name="pipFps">
+                   <option value="10">10 FPS (Low)</option>
+                   <option value="15">15 FPS (Medium)</option>
+                   <option value="25" selected>25 FPS (High)</option>
+               </select>
+           </div>
+        </div>
+        <hr class="settings-hr">
+
         <button id="saveSettings" class="settings-button">Save Settings</button>
         <button id="resetToDefaults" class="settings-button">Reset to Defaults</button>
         <p id="statusMessage"></p>

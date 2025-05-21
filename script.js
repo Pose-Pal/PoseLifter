@@ -32,8 +32,9 @@ let lastPostureIsGood = true;
 let postureStateChangedAt = Date.now();
 let pendingPostureIsGood = true;
 let POSTURE_GRACE_PERIOD_MS = 1500; // Default 1.5 seconds, will be updated from settings
-
-document.addEventListener('DOMContentLoaded', () => {
+let lastCanvasTextMessage = ""; // NEW: Track last message drawn on canvas for optimization
+ 
+ document.addEventListener('DOMContentLoaded', () => {
     videoElement = document.getElementById('video');
     canvasElement = document.getElementById('output');
     canvasCtx = canvasElement.getContext('2d');
@@ -616,48 +617,59 @@ function onResults(results) {
   // If grace period is active for a change, showPostureIsGood remains lastPostureIsGood
 
   if (statusDisplay) {
+    let currentMessageForCanvas = "";
     if (showPostureIsGood) {
       statusDisplay.textContent = "Good Posture";
       statusDisplay.className = 'good-posture';
-      // Draw "Good Posture" on canvas for PiP
-      canvasCtx.fillStyle = 'rgba(0, 128, 0, 0.7)'; // Greenish background
-      canvasCtx.fillRect(0, canvasElement.height - 40, canvasElement.width, 40);
-      canvasCtx.fillStyle = 'white';
-      canvasCtx.font = '16px Arial';
-      canvasCtx.textAlign = 'center';
-      canvasCtx.fillText("Good Posture", canvasElement.width / 2, canvasElement.height - 15);
-      canvasCtx.textAlign = 'left'; // Reset
-    } else {
-      statusDisplay.textContent = "Bad Posture: " + (feedbackMessages.join(', ') || "Adjust posture.");
-      statusDisplay.className = 'bad-posture';
-      // Draw feedback messages on canvas for PiP
-      canvasCtx.fillStyle = 'rgba(255, 0, 0, 0.7)'; // Reddish background
-      canvasCtx.fillRect(0, canvasElement.height - 60, canvasElement.width, 60); // Make taller for messages
-      canvasCtx.fillStyle = 'white';
-      canvasCtx.font = 'bold 14px Arial';
-      canvasCtx.textAlign = 'center';
-      const messageToShow = feedbackMessages.length > 0 ? feedbackMessages.join(', ') : "Adjust Posture";
-      // Simple text wrapping attempt
-      const maxLineWidth = canvasElement.width - 20;
-      const words = messageToShow.split(' ');
-      let line = '';
-      let yPos = canvasElement.height - 40; // Start position for first line
-
-      for(let n = 0; n < words.length; n++) {
-          let testLine = line + words[n] + ' ';
-          let metrics = canvasCtx.measureText(testLine);
-          let testWidth = metrics.width;
-          if (testWidth > maxLineWidth && n > 0) {
-              canvasCtx.fillText(line, canvasElement.width / 2, yPos);
-              line = words[n] + ' ';
-              yPos += 18; // Move to next line
-              if (yPos > canvasElement.height - 10) break; // Avoid drawing off canvas
-          } else {
-              line = testLine;
-          }
+      currentMessageForCanvas = "Good Posture";
+      if (lastCanvasTextMessage !== currentMessageForCanvas) {
+        // Draw "Good Posture" on canvas for PiP
+        canvasCtx.fillStyle = 'rgba(0, 128, 0, 0.7)'; // Greenish background
+        canvasCtx.fillRect(0, canvasElement.height - 40, canvasElement.width, 40);
+        canvasCtx.fillStyle = 'white';
+        canvasCtx.font = '16px Arial';
+        canvasCtx.textAlign = 'center';
+        canvasCtx.fillText(currentMessageForCanvas, canvasElement.width / 2, canvasElement.height - 15);
+        canvasCtx.textAlign = 'left'; // Reset
+        lastCanvasTextMessage = currentMessageForCanvas;
       }
-      canvasCtx.fillText(line, canvasElement.width / 2, yPos);
-      canvasCtx.textAlign = 'left'; // Reset
+    } else {
+      const feedbackText = feedbackMessages.join(', ') || "Adjust posture.";
+      statusDisplay.textContent = "Bad Posture: " + feedbackText;
+      statusDisplay.className = 'bad-posture';
+      currentMessageForCanvas = "Bad Posture: " + feedbackText;
+
+      if (lastCanvasTextMessage !== currentMessageForCanvas) {
+        // Draw feedback messages on canvas for PiP
+        canvasCtx.fillStyle = 'rgba(255, 0, 0, 0.7)'; // Reddish background
+        canvasCtx.fillRect(0, canvasElement.height - 60, canvasElement.width, 60); // Make taller for messages
+        canvasCtx.fillStyle = 'white';
+        canvasCtx.font = 'bold 14px Arial';
+        canvasCtx.textAlign = 'center';
+        const messageToDisplay = feedbackMessages.length > 0 ? feedbackMessages.join(', ') : "Adjust Posture";
+        // Simple text wrapping attempt
+        const maxLineWidth = canvasElement.width - 20;
+        const words = messageToDisplay.split(' ');
+        let line = '';
+        let yPos = canvasElement.height - 40; // Start position for first line
+
+        for(let n = 0; n < words.length; n++) {
+            let testLine = line + words[n] + ' ';
+            let metrics = canvasCtx.measureText(testLine);
+            let testWidth = metrics.width;
+            if (testWidth > maxLineWidth && n > 0) {
+                canvasCtx.fillText(line, canvasElement.width / 2, yPos);
+                line = words[n] + ' ';
+                yPos += 18; // Move to next line
+                if (yPos > canvasElement.height - 10) break; // Avoid drawing off canvas
+            } else {
+                line = testLine;
+            }
+        }
+        canvasCtx.fillText(line, canvasElement.width / 2, yPos);
+        canvasCtx.textAlign = 'left'; // Reset
+        lastCanvasTextMessage = currentMessageForCanvas;
+      }
     }
   }
 
