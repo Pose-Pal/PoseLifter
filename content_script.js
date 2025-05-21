@@ -1,4 +1,4 @@
-// content_script.js for PosePal
+// content_script.js for PosePal hopefully works
 
 const POSEPAL_BLUR_STYLE_ID = 'posepal-blur-overlay-style';
 const POSEPAL_BLUR_MESSAGE_ID = 'posepal-blur-message';
